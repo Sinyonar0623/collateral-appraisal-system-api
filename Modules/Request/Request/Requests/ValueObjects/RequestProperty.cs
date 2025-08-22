@@ -1,10 +1,17 @@
 namespace Request.Requests.ValueObjects;
 
-public record RequestProperty
+public class RequestProperty : ValueObject
 {
-    public RequestProperty()
+    public string PropertyType { get; }
+    public string BuildingType { get; }
+    public decimal? SellingPrice { get; }
+
+#pragma warning disable CS8618
+    private RequestProperty()
     {
+        // For EF Core
     }
+#pragma warning restore CS8618
 
     private RequestProperty(
         string propertyType,
@@ -16,9 +23,6 @@ public record RequestProperty
         BuildingType = buildingType;
         SellingPrice = sellingPrice;
     }
-    public string PropertyType { get; }
-    public string BuildingType { get; }
-    public decimal? SellingPrice { get; }
 
     public static RequestProperty Of(
         string propertyType,

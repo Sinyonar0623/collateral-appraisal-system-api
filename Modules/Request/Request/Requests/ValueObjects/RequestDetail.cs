@@ -1,21 +1,33 @@
 namespace Request.Requests.ValueObjects;
 
-public record RequestDetail
+public class RequestDetail : ValueObject
 {
-    public RequestDetail()
+    public string Purpose { get; } = default!;
+    public bool HasAppraisalBook { get; }
+    public string Priority { get; } = default!;
+    public string Channel { get; } = default!;
+    public int? OccurConstInspec { get; }
+    public LoanDetail LoanDetail { get; } = default!;
+    public Reference Reference { get; } = default!;
+    public Address Address { get; } = default!;
+    public Contact Contact { get; } = default!;
+    public Fee Fee { get; } = default!;
+    public Requestor Requestor { get; } = default!;
+
+    private RequestDetail()
     {
+        // For EF Core
     }
 
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("SonarQube", "S107:Methods should not have too many parameters")]
     private RequestDetail(
         string purpose,
         bool hasAppraisalBook,
         string priority,
         string channel,
-        string? loanApplicationNo,
-        decimal? limitAmt,
         int? occurConstInspec,
-        decimal? totalSellingPrice,
         Reference reference,
+        LoanDetail loanDetail,
         Address address,
         Contact contact,
         Fee fee,
@@ -26,41 +38,24 @@ public record RequestDetail
         HasAppraisalBook = hasAppraisalBook;
         Priority = priority;
         Channel = channel;
-        LoanApplicationNo = loanApplicationNo;
-        LimitAmt = limitAmt;
         OccurConstInspec = occurConstInspec;
-        TotalSellingPrice = totalSellingPrice;
         Reference = reference;
+        LoanDetail = loanDetail;
         Address = address;
         Contact = contact;
         Fee = fee;
         Requestor = requestor;
     }
 
-    public string Purpose { get; }
-    public bool HasAppraisalBook { get; }
-    public string Priority { get; }
-    public string Channel { get; }
-    public string? LoanApplicationNo { get; }
-    public decimal? LimitAmt { get; }
-    public int? OccurConstInspec { get; }
-    public decimal? TotalSellingPrice { get; }
-    public Reference Reference { get; }
-    public Address Address { get; }
-    public Contact Contact { get; }
-    public Fee Fee { get; }
-    public Requestor Requestor { get; }
-
-    public static RequestDetail Of(
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("SonarQube", "S107:Methods should not have too many parameters")]
+    public static RequestDetail Create(
         string purpose,
         bool hasAppraisalBook,
         string priority,
         string channel,
-        string? loanApplicationNo,
-        decimal? limitAmt,
         int? occurConstInspec,
-        decimal? totalSellingPrice,
         Reference reference,
+        LoanDetail loanDetail,
         Address address,
         Contact contact,
         Fee fee,
@@ -80,11 +75,9 @@ public record RequestDetail
             hasAppraisalBook,
             priority,
             channel,
-            loanApplicationNo,
-            limitAmt,
             occurConstInspec,
-            totalSellingPrice,
             reference,
+            loanDetail,
             address,
             contact,
             fee,

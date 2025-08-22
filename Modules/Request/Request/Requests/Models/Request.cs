@@ -1,113 +1,207 @@
+using Request.RequestComments.Models;
+
 namespace Request.Requests.Models;
 
 public class Request : Aggregate<long>
 {
+    public AppraisalNumber? AppraisalNo { get; private set; }
+    public RequestStatus Status { get; private set; } = default!;
+    public RequestDetail Detail { get; private set; } = default!;
+
+    // Customers
     private readonly List<RequestCustomer> _customers = [];
-    private readonly List<RequestProperty> _property = [];
+    public IReadOnlyList<RequestCustomer> Customers => _customers.AsReadOnly();
+
+    // Properties
+    private readonly List<RequestProperty> _properties = [];
+    public IReadOnlyList<RequestProperty> Properties => _properties.AsReadOnly();
 
     private Request()
     {
+        // For EF Core
     }
 
-    private Request(string appraisalNo, string status, RequestDetail detail)
+    private Request(RequestStatus status, RequestDetail detail)
     {
-        AppraisalNo = appraisalNo;
         Status = status;
         Detail = detail;
 
         AddDomainEvent(new RequestCreatedEvent(this));
     }
 
-    public string AppraisalNo { get; private set; } = default!;
-    public string Status { get; private set; } = default!;
-    public RequestDetail Detail { get; private set; } = default!;
-    public IReadOnlyList<RequestCustomer> Customers => _customers.AsReadOnly();
-    public IReadOnlyList<RequestProperty> Property => _property.AsReadOnly();
-
-    // Method
-    public static Request From(RequestDetail detail)
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("SonarQube", "S107:Methods should not have too many parameters")]
+    public static Request Create(
+        string purpose,
+        bool hasAppraisalBook,
+        string priority,
+        string channel,
+        int? occurConstInspec,
+        Reference reference,
+        LoanDetail loanDetail,
+        Address address,
+        Contact contact,
+        Fee fee,
+        Requestor requestor
+    )
     {
-        ArgumentNullException.ThrowIfNull(detail);
-
-        var requestDetail = RequestDetail.Of(
-            detail.Purpose,
-            detail.HasAppraisalBook,
-            detail.Priority,
-            detail.Channel,
-            detail.LoanApplicationNo,
-            detail.LimitAmt,
-            detail.OccurConstInspec,
-            detail.TotalSellingPrice,
-            new Reference(detail.Reference.PrevAppraisalNo,
-                detail.Reference.PrevAppraisalValue, detail.Reference.PrevAppraisalDate),
-            Address.Create(detail.Address.HouseNo, detail.Address.RoomNo, detail.Address.FloorNo,
-                detail.Address.LocationIdentifier, detail.Address.Moo, detail.Address.Soi, detail.Address.Road,
-                detail.Address.SubDistrict,
-                detail.Address.District, detail.Address.Province, detail.Address.Postcode),
-            new Contact(detail.Contact.ContactPersonName, detail.Contact.ContactPersonContactNo,
-                detail.Contact.ProjectCode),
-            new Fee(detail.Fee.FeeType, detail.Fee.FeeRemark),
-            Requestor.Create(detail.Requestor.RequestorEmpId, detail.Requestor.RequestorName,
-                detail.Requestor.RequestorEmail, detail.Requestor.RequestorContactNo, detail.Requestor.RequestorAo,
-                detail.Requestor.RequestorBranch, detail.Requestor.RequestorBusinessUnit,
-                detail.Requestor.RequestorDepartment,
-                detail.Requestor.RequestorSection, detail.Requestor.RequestorCostCenter)
+        var requestDetail = RequestDetail.Create(
+            purpose,
+            hasAppraisalBook,
+            priority,
+            channel,
+            occurConstInspec,
+            reference,
+            loanDetail,
+            address,
+            contact,
+            fee,
+            requestor
         );
 
-        return new Request("67A", "N", requestDetail);
+        return new Request(RequestStatus.New, requestDetail);
     }
 
-    public void UpdateStatus(string status)
+    public void SetAppraisalNumber(AppraisalNumber appraisalNo)
     {
-        ArgumentException.ThrowIfNullOrEmpty(status);
+        ArgumentException.ThrowIfNullOrWhiteSpace(appraisalNo);
+
+        AppraisalNo = appraisalNo;
+    }
+
+    private void UpdateStatus(RequestStatus status)
+    {
+        ArgumentNullException.ThrowIfNull(status);
 
         Status = status;
     }
 
-    public void UpdateDetail(RequestDetail detail)
+    public void SaveDraft()
     {
-        ArgumentNullException.ThrowIfNull(detail);
-
-        var requestDetail = RequestDetail.Of(
-            detail.Purpose,
-            detail.HasAppraisalBook,
-            detail.Priority,
-            detail.Channel,
-            detail.LoanApplicationNo,
-            detail.LimitAmt,
-            detail.OccurConstInspec,
-            detail.TotalSellingPrice,
-            new Reference(detail.Reference.PrevAppraisalNo,
-                detail.Reference.PrevAppraisalValue, detail.Reference.PrevAppraisalDate),
-            Address.Create(detail.Address.HouseNo, detail.Address.RoomNo, detail.Address.FloorNo,
-                detail.Address.LocationIdentifier, detail.Address.Moo, detail.Address.Soi, detail.Address.Road,
-                detail.Address.SubDistrict,
-                detail.Address.District, detail.Address.Province, detail.Address.Postcode),
-            new Contact(detail.Contact.ContactPersonName, detail.Contact.ContactPersonContactNo,
-                detail.Contact.ProjectCode),
-            new Fee(detail.Fee.FeeType, detail.Fee.FeeRemark),
-            Requestor.Create(detail.Requestor.RequestorEmpId, detail.Requestor.RequestorName,
-                detail.Requestor.RequestorEmail, detail.Requestor.RequestorContactNo, detail.Requestor.RequestorAo,
-                detail.Requestor.RequestorBranch, detail.Requestor.RequestorBusinessUnit,
-                detail.Requestor.RequestorDepartment,
-                detail.Requestor.RequestorSection, detail.Requestor.RequestorCostCenter)
-        );
-
-        Detail = requestDetail;
+        UpdateStatus(RequestStatus.Draft);
     }
 
-    public void AddCustomer(RequestCustomer customer)
+    public void Submit()
     {
-        ArgumentNullException.ThrowIfNull(customer);
+        UpdateStatus(RequestStatus.New);
+    }
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("SonarQube", "S107:Methods should not have too many parameters")]
+    public void UpdateDetail(
+        string purpose,
+        bool hasAppraisalBook,
+        string priority,
+        string channel,
+        int? occurConstInspec,
+        Reference reference,
+        LoanDetail loanDetail,
+        Address address,
+        Contact contact,
+        Fee fee,
+        Requestor requestor
+    )
+    {
+        RuleCheck.Valid()
+            .AddErrorIf(Status != RequestStatus.Draft && Status != RequestStatus.New,
+                "Cannot update request details when the status is not Draft or New.")
+            .ThrowIfInvalid();
+
+        var newDetail = RequestDetail.Create(
+            purpose,
+            hasAppraisalBook,
+            priority,
+            channel,
+            occurConstInspec,
+            reference,
+            loanDetail,
+            address,
+            contact,
+            fee,
+            requestor
+        );
+
+        if (!Detail.Equals(newDetail))
+        {
+            Detail = newDetail;
+        }
+    }
+
+    public void UpdateCustomers(List<RequestCustomer> customers)
+    {
+        RuleCheck.Valid()
+            .AddErrorIf(Status != RequestStatus.Draft && Status != RequestStatus.New,
+                "Cannot update request customers when the status is not Draft or New.")
+            .ThrowIfInvalid();
+
+        if (!_customers.SequenceEqual(customers))
+        {
+            _customers.Clear();
+            _customers.AddRange(customers);
+        }
+    }
+
+    public void UpdateProperties(List<RequestProperty> properties)
+    {
+        RuleCheck.Valid()
+            .AddErrorIf(Status != RequestStatus.Draft && Status != RequestStatus.New,
+                "Cannot update request properties when the status is not Draft or New.")
+            .ThrowIfInvalid();
+
+        if (!_properties.SequenceEqual(properties))
+        {
+            _properties.Clear();
+            _properties.AddRange(properties);
+        }
+    }
+
+    public void AddCustomer(string name, string contactNumber)
+    {
+        RuleCheck.Valid()
+            .AddErrorIf(_customers.Any(c => c.Name == name), "Customer with name '{name}' already exists.")
+            .ThrowIfInvalid();
+
+        var customer = RequestCustomer.Create(name, contactNumber);
 
         _customers.Add(customer);
     }
 
-    public void AddProperty(RequestProperty property)
+    public void RemoveCustomer(string name)
     {
-        ArgumentNullException.ThrowIfNull(property);
+        var initialCount = _customers.Count;
+        var customers = _customers.Where(c => c.Name != name).ToList();
 
-        _property.Add(property);
+        RuleCheck.Valid()
+            .AddErrorIf(initialCount == customers.Count, $"Customer with name '{name}' does not exist.")
+            .ThrowIfInvalid();
+
+        _customers.Clear();
+        _customers.AddRange(customers);
+    }
+
+    public void AddProperty(string propertyType, string buildingType, decimal? sellingPrice)
+    {
+        RuleCheck.Valid()
+            .AddErrorIf(_properties.Any(p => p.PropertyType == propertyType && p.BuildingType == buildingType),
+                $"Property with type '{propertyType}' and building type '{buildingType}' already exists.")
+            .ThrowIfInvalid();
+
+        var property = RequestProperty.Of(propertyType, buildingType, sellingPrice);
+
+        _properties.Add(property);
+    }
+
+    public void RemoveProperty(string propertyType, string buildingType)
+    {
+        var initialCount = _properties.Count;
+        var properties = _properties.Where(c => c.PropertyType != propertyType && c.BuildingType != buildingType)
+            .ToList();
+
+        RuleCheck.Valid()
+            .AddErrorIf(initialCount == properties.Count,
+                $"Property with type '{propertyType}' and building type '{buildingType}' does not exist.")
+            .ThrowIfInvalid();
+
+        _properties.Clear();
+        _properties.AddRange(properties);
     }
 
     public void ClearProperty()

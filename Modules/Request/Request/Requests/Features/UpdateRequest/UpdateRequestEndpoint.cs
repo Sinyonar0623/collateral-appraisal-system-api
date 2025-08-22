@@ -1,20 +1,20 @@
-using UpdateRequestRequest = Request.Contracts.Requests.Dtos.RequestDto;
-
 namespace Request.Requests.Features.UpdateRequest;
-
-public record UpdateRequestResponse(bool IsSuccess);
 
 public class UpdateRequestEndpoint : ICarterModule
 {
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        app.MapPut("/requests/{id}", async (long id, UpdateRequestRequest request, ISender sender) =>
-            {
-                var command = request.Adapt<UpdateRequestCommand>();
-                var result = await sender.Send(command);
-                var response = result.Adapt<UpdateRequestResponse>();
-                return Results.Ok(response);
-            })
+        app.MapPatch("/requests/{id:long}",
+                async (long id, UpdateRequestRequest request, ISender sender, CancellationToken cancellationToken) =>
+                {
+                    var command = request.Adapt<UpdateRequestCommand>() with { Id = id };
+
+                    var result = await sender.Send(command, cancellationToken);
+
+                    var response = result.Adapt<UpdateRequestResponse>();
+
+                    return Results.Ok(response);
+                })
             .WithName("UpdateRequest")
             .Produces<UpdateRequestResponse>()
             .ProducesProblem(StatusCodes.Status400BadRequest)

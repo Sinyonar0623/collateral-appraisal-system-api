@@ -1,15 +1,35 @@
 namespace Request.Requests.ValueObjects;
 
-public record Address
+public class Address : ValueObject
 {
-    private Address(string? houseNo, string? roomNo, string? floorNo, string? locationIdentifier,
-        string? moo, string? soi, string? road, string subDistrict, string district, string province,
+    public string? HouseNo { get; }
+    public string? RoomNo { get; }
+    public string? FloorNo { get; }
+    public string? BuildingNo { get; }
+    public string? ProjectName { get; }
+    public string? Moo { get; }
+    public string? Soi { get; }
+    public string? Road { get; }
+    public string? SubDistrict { get; }
+    public string? District { get; }
+    public string? Province { get; }
+    public string? Postcode { get; }
+
+    private Address()
+    {
+        // For EF Core
+    }
+
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("SonarQube", "S107:Methods should not have too many parameters")]
+    private Address(string? houseNo, string? roomNo, string? floorNo, string? buildingNo, string? projectName,
+        string? moo, string? soi, string? road, string? subDistrict, string? district, string? province,
         string? postcode)
     {
         HouseNo = houseNo;
         RoomNo = roomNo;
         FloorNo = floorNo;
-        LocationIdentifier = locationIdentifier;
+        BuildingNo = buildingNo;
+        ProjectName = projectName;
         Moo = moo;
         Soi = soi;
         Road = road;
@@ -19,24 +39,13 @@ public record Address
         Postcode = postcode;
     }
 
-    public string? HouseNo { get; init; }
-    public string? RoomNo { get; init; }
-    public string? FloorNo { get; init; }
-    public string? LocationIdentifier { get; init; }
-    public string? Moo { get; init; }
-    public string? Soi { get; init; }
-    public string? Road { get; init; }
-    public string SubDistrict { get; init; } = default!;
-    public string District { get; init; } = default!;
-    public string Province { get; init; } = default!;
-    public string? Postcode { get; init; }
-
+    [System.Diagnostics.CodeAnalysis.SuppressMessage("SonarQube", "S107:Methods should not have too many parameters")]
     public static Address Create(
-        string? houseNo, string? roomNo, string? floorNo, string? locationIdentifier,
-        string? moo, string? soi, string? road, string subDistrict, string district, string province,
+        string? houseNo, string? roomNo, string? floorNo, string? buildingNo, string? projectName,
+        string? moo, string? soi, string? road, string? subDistrict, string? district, string? province,
         string? postcode)
     {
-        return new Address(houseNo, roomNo, floorNo, locationIdentifier,
+        return new Address(houseNo, roomNo, floorNo, buildingNo, projectName,
             moo, soi, road, subDistrict, district, province,
             postcode);
     }
